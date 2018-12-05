@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.136
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Andoromeda.Kyubey.Timers", "Andoromeda.Kyubey.Timers\Andoromeda.Kyubey.Timers.csproj", "{AF3E06CA-2C8C-4F70-9D39-F379D8DD23FE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AF3E06CA-2C8C-4F70-9D39-F379D8DD23FE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AF3E06CA-2C8C-4F70-9D39-F379D8DD23FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AF3E06CA-2C8C-4F70-9D39-F379D8DD23FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AF3E06CA-2C8C-4F70-9D39-F379D8DD23FE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5EDC0636-0749-4E12-AF17-BEE9ED0F7A8E}
+	EndGlobalSection
+EndGlobal
