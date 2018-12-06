@@ -30,7 +30,7 @@ namespace Andoromeda.Kyubey.Timers.Jobs
                 {
                     foreach (var act in actions)
                     {
-                        Console.WriteLine($"Handling action log {act.account_action_seq} {act.action_trace.act.name}");
+                        logger.LogInfo($"Handling action log {act.account_action_seq} {act.action_trace.act.name}");
 
                         switch (act.action_trace.act.name)
                         {
