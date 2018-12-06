@@ -108,8 +108,8 @@ namespace Andoromeda.Kyubey.Timers.Jobs
         {
             try
             {
-                long orderId = Convert.ToInt64(data.id);
-                string token = data.bid.Split(' ')[1];
+                long orderId = Convert.ToInt64(data.t.id);
+                string token = Convert.ToString(data.t.bid).Split(' ')[1];
                 var order = await db.DexSellOrders.SingleOrDefaultAsync(x => x.Id == orderId && x.TokenId == token);
                 if (order != null)
                 {
@@ -118,11 +118,11 @@ namespace Andoromeda.Kyubey.Timers.Jobs
                 }
                 order = new DexSellOrder
                 {
-                    Id = data.id,
-                    Account = data.account,
-                    Ask = Convert.ToDouble(data.ask.Split(' ')[0]),
-                    Bid = Convert.ToDouble(data.bid.Split(' ')[0]),
-                    UnitPrice = data.unit_price / 100000000.0,
+                    Id = data.t.id,
+                    Account = data.t.account,
+                    Ask = Convert.ToDouble(Convert.ToString(data.t.ask).Split(' ')[0]),
+                    Bid = Convert.ToDouble(Convert.ToString(data.t.bid).Split(' ')[0]),
+                    UnitPrice = Convert.ToInt64(data.t.unit_price) / 100000000.0,
                     Time = time,
                     TokenId = token
                 };
@@ -140,8 +140,8 @@ namespace Andoromeda.Kyubey.Timers.Jobs
         {
             try
             {
-                long orderId = Convert.ToInt64(data.id);
-                string token = data.ask.Split(' ')[1];
+                long orderId = Convert.ToInt64(data.o.id);
+                string token = Convert.ToString(data.o.ask).Split(' ')[1];
                 var order = await db.DexBuyOrders.SingleOrDefaultAsync(x => x.Id == orderId && x.TokenId == token);
                 if (order != null)
                 {
@@ -150,11 +150,11 @@ namespace Andoromeda.Kyubey.Timers.Jobs
                 }
                 order = new DexBuyOrder
                 {
-                    Id = data.id,
-                    Account = data.account,
-                    Ask = Convert.ToDouble(data.ask.Split(' ')[0]),
-                    Bid = Convert.ToDouble(data.bid.Split(' ')[0]),
-                    UnitPrice = data.unit_price / 100000000.0,
+                    Id = data.o.id,
+                    Account = data.o.account,
+                    Ask = Convert.ToDouble(Convert.ToString(data.o.ask).Split(' ')[0]),
+                    Bid = Convert.ToDouble(Convert.ToString(data.o.bid).Split(' ')[0]),
+                    UnitPrice = Convert.ToInt64(data.o.unit_price) / 100000000.0,
                     Time = time,
                     TokenId = token
                 };
@@ -172,10 +172,10 @@ namespace Andoromeda.Kyubey.Timers.Jobs
         {
             try
             {
-                long orderId = Convert.ToInt64(data.id);
-                string token = data.bid.Split(' ')[1];
-                var bid = Convert.ToDouble(data.bid.Split(' ')[0]);
-                var ask = Convert.ToDouble(data.ask.Split(' ')[0]);
+                long orderId = Convert.ToInt64(data.t.id);
+                string token = Convert.ToString(data.t.bid).Split(' ')[1];
+                var bid = Convert.ToDouble(Convert.ToString(data.t.bid).Split(' ')[0]);
+                var ask = Convert.ToDouble(Convert.ToString(data.t.ask).Split(' ')[0]);
                 var order = await db.DexBuyOrders.SingleOrDefaultAsync(x => x.Id == orderId && x.TokenId == token);
                 if (order != null)
                 {
@@ -191,11 +191,11 @@ namespace Andoromeda.Kyubey.Timers.Jobs
                 {
                     Ask = ask,
                     Bid = bid,
-                    Asker = data.asker,
-                    Bidder = data.bidder,
+                    Asker = data.t.asker,
+                    Bidder = data.t.bidder,
                     Time = time,
                     TokenId = token,
-                    UnitPrice = data.unit_price / 100000000.0
+                    UnitPrice = Convert.ToInt64(data.t.unit_price) / 100000000.0
                 });
                 await db.SaveChangesAsync();
             }
@@ -210,10 +210,10 @@ namespace Andoromeda.Kyubey.Timers.Jobs
         {
             try
             {
-                long orderId = Convert.ToInt64(data.id);
-                string token = data.ask.Split(' ')[1];
-                var bid = Convert.ToDouble(data.bid.Split(' ')[0]);
-                var ask = Convert.ToDouble(data.ask.Split(' ')[0]);
+                long orderId = Convert.ToInt64(data.t.id);
+                string token = Convert.ToString(data.t.ask).Split(' ')[1];
+                var bid = Convert.ToDouble(Convert.ToString(data.t.bid).Split(' ')[0]);
+                var ask = Convert.ToDouble(Convert.ToString(data.t.ask).Split(' ')[0]);
                 var order = await db.DexSellOrders.SingleOrDefaultAsync(x => x.Id == orderId && x.TokenId == token);
                 if (order != null)
                 {
@@ -229,11 +229,11 @@ namespace Andoromeda.Kyubey.Timers.Jobs
                 {
                     Ask = ask,
                     Bid = bid,
-                    Asker = data.asker,
-                    Bidder = data.bidder,
+                    Asker = data.t.asker,
+                    Bidder = data.t.bidder,
                     Time = time,
                     TokenId = token,
-                    UnitPrice = data.unit_price / 100000000.0
+                    UnitPrice = Convert.ToInt64(data.t.unit_price) / 100000000.0
                 });
                 await db.SaveChangesAsync();
             }
