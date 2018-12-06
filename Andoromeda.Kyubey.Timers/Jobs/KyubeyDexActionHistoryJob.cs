@@ -13,7 +13,7 @@ using Andoromeda.Kyubey.Timers.Models;
 
 namespace Andoromeda.Kyubey.Timers.Jobs
 {
-    public class ActionHistoryJob : Job
+    public class KyubeyDexActionHistoryJob : Job
     {
         [Invoke(Begin = "2018-06-01", Interval = 1000 * 5, SkipWhileExecuting = true)]
         public void PollDexActions(IConfiguration config, KyubeyContext db, ILogger logger, NodeApiInvoker nodeApiInvoker)
