@@ -2,110 +2,55 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Net.Http;
 using Pomelo.AspNetCore.TimedJob;
 using Microsoft.Extensions.Configuration;
+using Microsoft.EntityFrameworkCore;
 using Andoromeda.Framework.EosNode;
 using Andoromeda.Framework.Logger;
 using Andoromeda.Kyubey.Models;
+using Andoromeda.Kyubey.Timers.Models;
 
 namespace Andoromeda.Kyubey.Timers.Jobs
 {
     public class ActionHistoryJob : Job
     {
         [Invoke(Begin = "2018-06-01", Interval = 1000 * 5, SkipWhileExecuting = true)]
-        public void PollDexActions(IConfiguration config, KyubeyContext db, ILogger logger)
+        public void PollDexActions(IConfiguration config, KyubeyContext db, ILogger logger, NodeApiInvoker nodeApiInvoker)
         {
-            TryHandleDexActionAsync(config, db).Wait();
+            TryHandleDexActionAsync(config, db, logger, nodeApiInvoker).Wait();
         }
 
-        [Invoke(Begin = "2018-06-01", Interval = 1000 * 15, SkipWhileExecuting = true)]
-        public void PollIboActions(IConfiguration config, KyubeyContext db, ITokenRepository tokenRepository, ILogger logger)
-        {
-            try
-            {
-                var tokens = db.Tokens
-                    .Where(x => x.HasIncubation)
-                    .ToList();
-
-                foreach (var x in tokens)
-                {
-                    var token = tokenRepository.GetOne(x.Id);
-                    if (token.Incubation == null
-                        || token.Basic == null
-                        || token.Basic.Contract == null
-                        || string.IsNullOrEmpty(token.Basic.Contract.Depot ?? token.Basic.Contract.Transfer))
-                    {
-                        continue;
-                    }
-                    TryHandleIboActionAsync(config, db, x.Id, tokenRepository).Wait();
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex.ToString());
-                throw;
-            }
-        }
-
-        private async Task TryHandleIboActionAsync(
-            IConfiguration config, KyubeyContext db,
-            string tokenId, ITokenRepository tokenRepository)
+        private async Task TryHandleDexActionAsync(IConfiguration config, KyubeyContext db, ILogger logger, NodeApiInvoker nodeApiInvoker)
         {
             while (true)
             {
-                var actions = await LookupIboActionAsync(config, db, tokenId, tokenRepository);
-                foreach (var act in actions)
-                {
-                    Console.WriteLine($"Handling action log {act.account_action_seq} {act.action_trace.act.name}");
-                    var blockTime = TimeZoneInfo.ConvertTimeToUtc(Convert.ToDateTime(act.block_time + 'Z'));
-                    switch (act.action_trace.act.name)
-                    {
-                        case "transfer":
-                            var token = tokenRepository.GetOne(tokenId);
-                            await HandleRaiseLogAsync(db, act.action_trace.act.data, blockTime, tokenId, token.Basic.Contract.Depot ?? token.Basic.Contract.Transfer);
-                            break;
-                        default:
-                            continue;
-                    }
-                }
-
-                if (actions.Count() < 100)
-                {
-                    break;
-                }
-            }
-        }
-
-        private async Task TryHandleDexActionAsync(IConfiguration config, KyubeyContext db)
-        {
-            while (true)
-            {
-                var actions = await LookupDexActionAsync(config, db);
+                var actions = await LookupDexActionAsync(config, db, logger, nodeApiInvoker);
                 if (actions != null)
                 {
                     foreach (var act in actions)
                     {
                         Console.WriteLine($"Handling action log {act.account_action_seq} {act.action_trace.act.name}");
-                        var blockTime = TimeZoneInfo.ConvertTimeToUtc(Convert.ToDateTime(act.block_time + 'Z'));
+
                         switch (act.action_trace.act.name)
                         {
                             case "sellmatch":
-                                await HandleSellMatchAsync(db, act.action_trace.act.data, blockTime);
+                                await HandleSellMatchAsync(db, act.action_trace.act.data, act.block_time, logger);
                                 break;
                             case "buymatch":
-                                await HandleBuyMatchAsync(db, act.action_trace.act.data, blockTime);
+                                await HandleBuyMatchAsync(db, act.action_trace.act.data, act.block_time, logger);
                                 break;
                             case "sellreceipt":
-                                await HandleSellReceiptAsync(db, act.action_trace.act.data, blockTime);
+                                await HandleSellReceiptAsync(db, act.action_trace.act.data, act.block_time, logger);
                                 break;
                             case "buyreceipt":
-                                await HandleBuyReceiptAsync(db, act.action_trace.act.data, blockTime);
+                                await HandleBuyReceiptAsync(db, act.action_trace.act.data, act.block_time, logger);
                                 break;
                             case "cancelbuy":
-                                await HandleCancelBuyAsync(db, act.action_trace.act.data, blockTime);
+                                await HandleCancelBuyAsync(db, act.action_trace.act.data, act.block_time, logger);
                                 break;
                             case "cancelsell":
-                                await HandleCancelSellAsync(db, act.action_trace.act.data, blockTime);
+                                await HandleCancelSellAsync(db, act.action_trace.act.data, act.block_time, logger);
                                 break;
                             default:
                                 continue;
@@ -119,34 +64,13 @@ namespace Andoromeda.Kyubey.Timers.Jobs
             }
         }
 
-        private async Task HandleRaiseLogAsync(KyubeyContext db, TransferActionData data, DateTime time, string tokenId, string transferContractAccount, ILogger logger)
+        private async Task HandleCancelSellAsync(KyubeyContext db, GetActionsResponseActionTraceAct data, DateTime time, ILogger logger)
         {
             try
             {
-                if (data.from != transferContractAccount && data.to == transferContractAccount)
-                {
-                    db.RaiseLogs.Add(new RaiseLog
-                    {
-                        Account = data.from,
-                        Amount = Convert.ToDouble(data.quantity.Split(' ')[0]),
-                        Timestamp = time,
-                        TokenId = tokenId
-                    });
-                    await db.SaveChangesAsync();
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex.ToString());
-                throw;
-            }
-        }
-
-        private async Task HandleCancelSellAsync(KyubeyContext db, ActionDataWrap data, DateTime time, ILogger logger)
-        {
-            try
-            {
-                var order = await db.DexSellOrders.SingleOrDefaultAsync(x => x.Id == data.id && x.TokenId == data.symbol);
+                long orderId = Convert.ToInt64(data.data.id);
+                string symbol = Convert.ToString(data.data.symbol);
+                var order = await db.DexSellOrders.SingleOrDefaultAsync(x => x.Id == orderId && x.TokenId == symbol);
                 if (order != null)
                 {
                     db.DexSellOrders.Remove(order);
@@ -160,11 +84,13 @@ namespace Andoromeda.Kyubey.Timers.Jobs
             }
         }
 
-        private async Task HandleCancelBuyAsync(KyubeyContext db, ActionDataWrap data, DateTime time, ILogger logger)
+        private async Task HandleCancelBuyAsync(KyubeyContext db, GetActionsResponseActionTraceAct data, DateTime time, ILogger logger)
         {
             try
             {
-                var order = await db.DexBuyOrders.SingleOrDefaultAsync(x => x.Id == data.id && x.TokenId == data.symbol);
+                long orderId = Convert.ToInt64(data.data.id);
+                string symbol = Convert.ToString(data.data.symbol);
+                var order = await db.DexBuyOrders.SingleOrDefaultAsync(x => x.Id == orderId && x.TokenId == symbol);
                 if (order != null)
                 {
                     db.DexBuyOrders.Remove(order);
@@ -178,12 +104,13 @@ namespace Andoromeda.Kyubey.Timers.Jobs
             }
         }
 
-        private async Task HandleSellReceiptAsync(KyubeyContext db, ActionDataWrap data, DateTime time, ILogger logger)
+        private async Task HandleSellReceiptAsync(KyubeyContext db, GetActionsResponseActionTraceAct data, DateTime time, ILogger logger)
         {
             try
             {
-                var token = data.data.bid.Split(' ')[1];
-                var order = await db.DexSellOrders.SingleOrDefaultAsync(x => x.Id == data.data.id && x.TokenId == token);
+                long orderId = Convert.ToInt64(data.data.id);
+                string token = data.data.bid.Split(' ')[1];
+                var order = await db.DexSellOrders.SingleOrDefaultAsync(x => x.Id == orderId && x.TokenId == token);
                 if (order != null)
                 {
                     db.DexSellOrders.Remove(order);
@@ -209,12 +136,13 @@ namespace Andoromeda.Kyubey.Timers.Jobs
             }
         }
 
-        private async Task HandleBuyReceiptAsync(KyubeyContext db, ActionDataWrap data, DateTime time, ILogger logger)
+        private async Task HandleBuyReceiptAsync(KyubeyContext db, GetActionsResponseActionTraceAct data, DateTime time, ILogger logger)
         {
             try
             {
-                var token = data.data.ask.Split(' ')[1];
-                var order = await db.DexBuyOrders.SingleOrDefaultAsync(x => x.Id == data.data.id && x.TokenId == token);
+                long orderId = Convert.ToInt64(data.data.id);
+                string token = data.data.ask.Split(' ')[1];
+                var order = await db.DexBuyOrders.SingleOrDefaultAsync(x => x.Id == orderId && x.TokenId == token);
                 if (order != null)
                 {
                     db.DexBuyOrders.Remove(order);
@@ -240,14 +168,15 @@ namespace Andoromeda.Kyubey.Timers.Jobs
             }
         }
 
-        private async Task HandleSellMatchAsync(KyubeyContext db, ActionDataWrap data, DateTime time, ILogger)
+        private async Task HandleSellMatchAsync(KyubeyContext db, GetActionsResponseActionTraceAct data, DateTime time, ILogger logger)
         {
             try
             {
-                var token = data.data.bid.Split(' ')[1];
+                long orderId = Convert.ToInt64(data.data.id);
+                string token = data.data.bid.Split(' ')[1];
                 var bid = Convert.ToDouble(data.data.bid.Split(' ')[0]);
                 var ask = Convert.ToDouble(data.data.ask.Split(' ')[0]);
-                var order = await db.DexBuyOrders.SingleOrDefaultAsync(x => x.Id == data.data.id && x.TokenId == token);
+                var order = await db.DexBuyOrders.SingleOrDefaultAsync(x => x.Id == orderId && x.TokenId == token);
                 if (order != null)
                 {
                     order.Bid -= bid;
@@ -277,14 +206,15 @@ namespace Andoromeda.Kyubey.Timers.Jobs
             }
         }
 
-        private async Task HandleBuyMatchAsync(KyubeyContext db, ActionDataWrap data, DateTime time, ILogger logger)
+        private async Task HandleBuyMatchAsync(KyubeyContext db, GetActionsResponseActionTraceAct data, DateTime time, ILogger logger)
         {
             try
             {
-                var token = data.data.ask.Split(' ')[1];
+                long orderId = Convert.ToInt64(data.data.id);
+                string token = data.data.ask.Split(' ')[1];
                 var bid = Convert.ToDouble(data.data.bid.Split(' ')[0]);
                 var ask = Convert.ToDouble(data.data.ask.Split(' ')[0]);
-                var order = await db.DexSellOrders.SingleOrDefaultAsync(x => x.Id == data.data.id && x.TokenId == token);
+                var order = await db.DexSellOrders.SingleOrDefaultAsync(x => x.Id == orderId && x.TokenId == token);
                 if (order != null)
                 {
                     order.Bid -= bid;
@@ -314,37 +244,15 @@ namespace Andoromeda.Kyubey.Timers.Jobs
             }
         }
 
-        private async Task<IEnumerable<EosAction<ActionDataWrap>>> LookupDexActionAsync(IConfiguration config, KyubeyContext db, ILogger logger)
+        private async Task<IEnumerable<GetActionsResponseAction>> LookupDexActionAsync(IConfiguration config, KyubeyContext db, ILogger logger, NodeApiInvoker nodeApiInvoker)
         {
             try
             {
                 var row = await db.Constants.SingleAsync(x => x.Id == "action_pos");
-                var position = Convert.ToInt64(row.Value);
-                using (var client = new HttpClient { BaseAddress = new Uri(config["TransactionNodeBackup"]) })
-                using (var response = await client.PostAsJsonAsync("/v1/history/get_actions", new
-                {
-                    account_name = "kyubeydex.bp",
-                    pos = position,
-                    offset = 100
-                }))
-                {
-                    var txt = await response.Content.ReadAsStringAsync();
-                    var result = JsonConvert.DeserializeObject<EosActionWrap<ActionDataWrap>>(txt, new JsonSerializerSettings
-                    {
-                        Error = HandleDeserializationError
-                    });
-                    if (result.actions.Count() == 0)
-                    {
-                        return null;
-                    }
-                    if (result.actions.Count() > 0)
-                    {
-                        row.Value = result.actions.Last().account_action_seq.ToString();
-                        await db.SaveChangesAsync();
-                    }
+                var position = Convert.ToInt32(row.Value);
 
-                    return result.actions;
-                }
+                var ret = await nodeApiInvoker.GetActionsAsync("kyubeydex.bp", position);
+                return ret.actions;
             }
             catch (Exception ex)
             {
@@ -353,45 +261,15 @@ namespace Andoromeda.Kyubey.Timers.Jobs
             }
         }
 
-        private async Task<IEnumerable<EosAction<TransferActionData>>> LookupIboActionAsync(
-            IConfiguration config, KyubeyContext db,
-            string tokenId, ITokenRepository tokenRepository,
-            ILogger logger)
-        {
-            var tokenInDb = await db.Tokens.SingleAsync(x => x.Id == tokenId);
-            var position = tokenInDb.ActionPosition;
-            var token = tokenRepository.GetOne(tokenId);
-            using (var client = new HttpClient { BaseAddress = new Uri(config["TransactionNodeBackup"]) })
-            using (var response = await client.PostAsJsonAsync("/v1/history/get_actions", new
-            {
-                account_name = token.Basic.Contract.Transfer,
-                pos = position,
-                offset = 100
-            }))
-            {
-                var txt = await response.Content.ReadAsStringAsync();
-                var result = JsonConvert.DeserializeObject<EosActionWrap<TransferActionData>>(txt, new JsonSerializerSettings
-                {
-                    Error = HandleDeserializationError
-                });
-                if (result.actions.Count() == 0)
-                {
-                    return null;
-                }
-                if (result.actions.Count() > 0)
-                {
-                    tokenInDb.ActionPosition = result.actions.Last().account_action_seq;
-                    await db.SaveChangesAsync();
-                }
+        private static HttpClient _client = new HttpClient { BaseAddress = new Uri("https://kyubey.net") };
 
-                return result.actions;
+        private async Task<GetTokenResultContract> GetTokenContractsAsync(string symbol)
+        {
+            using (var response = await _client.GetAsync("/api/v1/lang/en/token/" + symbol))
+            {
+                var ret = await response.Content.ReadAsAsync<ApiResult<GetTokenResult>>();
+                return ret.Data.Contract;
             }
-        }
-
-        private void HandleDeserializationError(object sender, ErrorEventArgs errorArgs)
-        {
-            var currentError = errorArgs.ErrorContext.Error.Message;
-            errorArgs.ErrorContext.Handled = true;
         }
     }
 }
