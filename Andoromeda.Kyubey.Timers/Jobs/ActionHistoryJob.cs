@@ -30,7 +30,7 @@ namespace Andoromeda.Kyubey.Timers.Jobs
                 {
                     foreach (var act in actions)
                     {
-                        logger.LogInfo($"Handling action log {act.account_action_seq} {act.action_trace.act.name}");
+                        logger.LogInfo($"Handling action log pos={act.account_action_seq}, act={act.action_trace.act.name}");
 
                         switch (act.action_trace.act.name)
                         {
@@ -64,12 +64,12 @@ namespace Andoromeda.Kyubey.Timers.Jobs
             }
         }
 
-        private async Task HandleCancelSellAsync(KyubeyContext db, GetActionsResponseActionTraceAct data, DateTime time, ILogger logger)
+        private async Task HandleCancelSellAsync(KyubeyContext db, dynamic data, DateTime time, ILogger logger)
         {
             try
             {
-                long orderId = Convert.ToInt64(data.data.id);
-                string symbol = Convert.ToString(data.data.symbol);
+                long orderId = Convert.ToInt64(data.id);
+                string symbol = Convert.ToString(data.symbol);
                 var order = await db.DexSellOrders.SingleOrDefaultAsync(x => x.Id == orderId && x.TokenId == symbol);
                 if (order != null)
                 {
@@ -84,12 +84,12 @@ namespace Andoromeda.Kyubey.Timers.Jobs
             }
         }
 
-        private async Task HandleCancelBuyAsync(KyubeyContext db, GetActionsResponseActionTraceAct data, DateTime time, ILogger logger)
+        private async Task HandleCancelBuyAsync(KyubeyContext db, dynamic data, DateTime time, ILogger logger)
         {
             try
             {
-                long orderId = Convert.ToInt64(data.data.id);
-                string symbol = Convert.ToString(data.data.symbol);
+                long orderId = Convert.ToInt64(data.id);
+                string symbol = Convert.ToString(data.symbol);
                 var order = await db.DexBuyOrders.SingleOrDefaultAsync(x => x.Id == orderId && x.TokenId == symbol);
                 if (order != null)
                 {
@@ -104,12 +104,12 @@ namespace Andoromeda.Kyubey.Timers.Jobs
             }
         }
 
-        private async Task HandleSellReceiptAsync(KyubeyContext db, GetActionsResponseActionTraceAct data, DateTime time, ILogger logger)
+        private async Task HandleSellReceiptAsync(KyubeyContext db, dynamic data, DateTime time, ILogger logger)
         {
             try
             {
-                long orderId = Convert.ToInt64(data.data.id);
-                string token = data.data.bid.Split(' ')[1];
+                long orderId = Convert.ToInt64(data.id);
+                string token = data.bid.Split(' ')[1];
                 var order = await db.DexSellOrders.SingleOrDefaultAsync(x => x.Id == orderId && x.TokenId == token);
                 if (order != null)
                 {
@@ -118,11 +118,11 @@ namespace Andoromeda.Kyubey.Timers.Jobs
                 }
                 order = new DexSellOrder
                 {
-                    Id = data.data.id,
-                    Account = data.data.account,
-                    Ask = Convert.ToDouble(data.data.ask.Split(' ')[0]),
-                    Bid = Convert.ToDouble(data.data.bid.Split(' ')[0]),
-                    UnitPrice = data.data.unit_price / 100000000.0,
+                    Id = data.id,
+                    Account = data.account,
+                    Ask = Convert.ToDouble(data.ask.Split(' ')[0]),
+                    Bid = Convert.ToDouble(data.bid.Split(' ')[0]),
+                    UnitPrice = data.unit_price / 100000000.0,
                     Time = time,
                     TokenId = token
                 };
@@ -136,12 +136,12 @@ namespace Andoromeda.Kyubey.Timers.Jobs
             }
         }
 
-        private async Task HandleBuyReceiptAsync(KyubeyContext db, GetActionsResponseActionTraceAct data, DateTime time, ILogger logger)
+        private async Task HandleBuyReceiptAsync(KyubeyContext db, dynamic data, DateTime time, ILogger logger)
         {
             try
             {
-                long orderId = Convert.ToInt64(data.data.id);
-                string token = data.data.ask.Split(' ')[1];
+                long orderId = Convert.ToInt64(data.id);
+                string token = data.ask.Split(' ')[1];
                 var order = await db.DexBuyOrders.SingleOrDefaultAsync(x => x.Id == orderId && x.TokenId == token);
                 if (order != null)
                 {
@@ -150,11 +150,11 @@ namespace Andoromeda.Kyubey.Timers.Jobs
                 }
                 order = new DexBuyOrder
                 {
-                    Id = data.data.id,
-                    Account = data.data.account,
-                    Ask = Convert.ToDouble(data.data.ask.Split(' ')[0]),
-                    Bid = Convert.ToDouble(data.data.bid.Split(' ')[0]),
-                    UnitPrice = data.data.unit_price / 100000000.0,
+                    Id = data.id,
+                    Account = data.account,
+                    Ask = Convert.ToDouble(data.ask.Split(' ')[0]),
+                    Bid = Convert.ToDouble(data.bid.Split(' ')[0]),
+                    UnitPrice = data.unit_price / 100000000.0,
                     Time = time,
                     TokenId = token
                 };
@@ -168,14 +168,14 @@ namespace Andoromeda.Kyubey.Timers.Jobs
             }
         }
 
-        private async Task HandleSellMatchAsync(KyubeyContext db, GetActionsResponseActionTraceAct data, DateTime time, ILogger logger)
+        private async Task HandleSellMatchAsync(KyubeyContext db, dynamic data, DateTime time, ILogger logger)
         {
             try
             {
-                long orderId = Convert.ToInt64(data.data.id);
-                string token = data.data.bid.Split(' ')[1];
-                var bid = Convert.ToDouble(data.data.bid.Split(' ')[0]);
-                var ask = Convert.ToDouble(data.data.ask.Split(' ')[0]);
+                long orderId = Convert.ToInt64(data.id);
+                string token = data.bid.Split(' ')[1];
+                var bid = Convert.ToDouble(data.bid.Split(' ')[0]);
+                var ask = Convert.ToDouble(data.ask.Split(' ')[0]);
                 var order = await db.DexBuyOrders.SingleOrDefaultAsync(x => x.Id == orderId && x.TokenId == token);
                 if (order != null)
                 {
@@ -191,11 +191,11 @@ namespace Andoromeda.Kyubey.Timers.Jobs
                 {
                     Ask = ask,
                     Bid = bid,
-                    Asker = data.data.asker,
-                    Bidder = data.data.bidder,
+                    Asker = data.asker,
+                    Bidder = data.bidder,
                     Time = time,
                     TokenId = token,
-                    UnitPrice = data.data.unit_price / 100000000.0
+                    UnitPrice = data.unit_price / 100000000.0
                 });
                 await db.SaveChangesAsync();
             }
@@ -206,14 +206,14 @@ namespace Andoromeda.Kyubey.Timers.Jobs
             }
         }
 
-        private async Task HandleBuyMatchAsync(KyubeyContext db, GetActionsResponseActionTraceAct data, DateTime time, ILogger logger)
+        private async Task HandleBuyMatchAsync(KyubeyContext db, dynamic data, DateTime time, ILogger logger)
         {
             try
             {
-                long orderId = Convert.ToInt64(data.data.id);
-                string token = data.data.ask.Split(' ')[1];
-                var bid = Convert.ToDouble(data.data.bid.Split(' ')[0]);
-                var ask = Convert.ToDouble(data.data.ask.Split(' ')[0]);
+                long orderId = Convert.ToInt64(data.id);
+                string token = data.ask.Split(' ')[1];
+                var bid = Convert.ToDouble(data.bid.Split(' ')[0]);
+                var ask = Convert.ToDouble(data.ask.Split(' ')[0]);
                 var order = await db.DexSellOrders.SingleOrDefaultAsync(x => x.Id == orderId && x.TokenId == token);
                 if (order != null)
                 {
@@ -229,11 +229,11 @@ namespace Andoromeda.Kyubey.Timers.Jobs
                 {
                     Ask = ask,
                     Bid = bid,
-                    Asker = data.data.asker,
-                    Bidder = data.data.bidder,
+                    Asker = data.asker,
+                    Bidder = data.bidder,
                     Time = time,
                     TokenId = token,
-                    UnitPrice = data.data.unit_price / 100000000.0
+                    UnitPrice = data.unit_price / 100000000.0
                 });
                 await db.SaveChangesAsync();
             }
@@ -250,8 +250,20 @@ namespace Andoromeda.Kyubey.Timers.Jobs
             {
                 var row = await db.Constants.SingleAsync(x => x.Id == "action_pos");
                 var position = Convert.ToInt32(row.Value);
+                logger.LogInfo("Current kyubeydex.bp account seq is " + position);
 
                 var ret = await nodeApiInvoker.GetActionsAsync("kyubeydex.bp", position);
+                if (ret.actions.Count() == 0)
+                {
+                    logger.LogInfo("No new action in kyubeydex.bp");
+                    return new GetActionsResponseAction[] { };
+                }
+
+                position += ret.actions.Count();
+                row.Value = position.ToString();
+                await db.SaveChangesAsync();
+                logger.LogInfo($"{ret.actions.Count()} new actions found in kyubeydex.bp, position moved to " + position);
+
                 return ret.actions;
             }
             catch (Exception ex)
