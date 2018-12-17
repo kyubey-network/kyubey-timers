@@ -52,6 +52,9 @@ namespace Andoromeda.Kyubey.Timers.Jobs
                             case "cancelsell":
                                 await HandleCancelSellAsync(db, act.action_trace.act.data, act.block_time, logger);
                                 break;
+                            case "clean":
+                                await HandleCleanAsync(db, act.action_trace.act.data, act.block_time, logger);
+                                break;
                             default:
                                 continue;
                         }
@@ -61,6 +64,22 @@ namespace Andoromeda.Kyubey.Timers.Jobs
                 {
                     break;
                 }
+            }
+        }
+
+        private async Task HandleCleanAsync(KyubeyContext db, dynamic data, DateTime time, ILogger logger)
+        {
+            try
+            {
+                string symbol = Convert.ToString(data.symbol);
+                db.Remove(db.DexBuyOrders.Where(x => x.TokenId == symbol));
+                db.Remove(db.DexSellOrders.Where(x => x.TokenId == symbol));
+                await db.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex.ToString());
+                throw;
             }
         }
 
