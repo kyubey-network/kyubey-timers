@@ -179,8 +179,8 @@ namespace Andoromeda.Kyubey.Timers.Jobs
                 var order = await db.DexBuyOrders.SingleOrDefaultAsync(x => x.Id == orderId && x.TokenId == token);
                 if (order != null)
                 {
-                    order.Bid -= bid;
-                    order.Ask -= ask;
+                    order.Bid -= ask;
+                    order.Ask -= bid;
                     if (order.Ask <= 0 || order.Bid <= 0)
                     {
                         db.DexBuyOrders.Remove(order);
@@ -217,8 +217,8 @@ namespace Andoromeda.Kyubey.Timers.Jobs
                 var order = await db.DexSellOrders.SingleOrDefaultAsync(x => x.Id == orderId && x.TokenId == token);
                 if (order != null)
                 {
-                    order.Bid -= bid;
-                    order.Ask -= ask;
+                    order.Bid -= ask;
+                    order.Ask -= bid;
                     if (order.Ask <= 0 || order.Bid <= 0)
                     {
                         db.DexSellOrders.Remove(order);
