@@ -73,6 +73,7 @@ namespace Andoromeda.Kyubey.Timers.Jobs
             {
                 string symbol = Convert.ToString(data.symbol);
                 db.Remove(db.DexBuyOrders.Where(x => x.TokenId == symbol));
+                await db.SaveChangesAsync();
                 db.Remove(db.DexSellOrders.Where(x => x.TokenId == symbol));
                 await db.SaveChangesAsync();
             }
@@ -214,7 +215,8 @@ namespace Andoromeda.Kyubey.Timers.Jobs
                     Bidder = data.t.bidder,
                     Time = time,
                     TokenId = token,
-                    UnitPrice = Convert.ToInt64(data.t.unit_price) / 100000000.0
+                    UnitPrice = Convert.ToInt64(data.t.unit_price) / 100000000.0,
+                    IsSellMatch = true
                 });
                 await db.SaveChangesAsync();
             }
@@ -252,7 +254,8 @@ namespace Andoromeda.Kyubey.Timers.Jobs
                     Bidder = data.t.bidder,
                     Time = time,
                     TokenId = token,
-                    UnitPrice = Convert.ToInt64(data.t.unit_price) / 100000000.0
+                    UnitPrice = Convert.ToInt64(data.t.unit_price) / 100000000.0,
+                    IsSellMatch = false
                 });
                 await db.SaveChangesAsync();
             }
