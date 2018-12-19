@@ -35,10 +35,10 @@ namespace Andoromeda.Kyubey.Timers.Jobs
                         switch (act.action_trace.act.name)
                         {
                             case "addfav":
-                                await HandleAddFavAsync(db, act.action_trace.act.data.symbol, act.action_trace.act.authorization.First().actor, act.block_time, logger);
+                                await HandleAddFavAsync(db, (string)act.action_trace.act.data.symbol, act.action_trace.act.authorization.First().actor, act.block_time, logger);
                                 break;
                             case "removefav":
-                                await HandleRemoveFavAsync(db, act.action_trace.act.data.symbol, act.action_trace.act.authorization.First().actor, act.block_time, logger);
+                                await HandleRemoveFavAsync(db, (string)act.action_trace.act.data.symbol, act.action_trace.act.authorization.First().actor, act.block_time, logger);
                                 break;
                             case "sellmatch":
                                 await HandleSellMatchAsync(db, act.action_trace.act.data, act.block_time, logger);
