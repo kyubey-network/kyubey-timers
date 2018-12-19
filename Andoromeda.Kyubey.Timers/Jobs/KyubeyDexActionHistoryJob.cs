@@ -34,6 +34,12 @@ namespace Andoromeda.Kyubey.Timers.Jobs
 
                         switch (act.action_trace.act.name)
                         {
+                            case "addfav":
+                                await HandleAddFavAsync(db, act.action_trace.act.data.symbol, act.action_trace.act.authorization.First().actor, act.block_time, logger);
+                                break;
+                            case "removefav":
+                                await HandleRemoveFavAsync(db, act.action_trace.act.data.symbol, act.action_trace.act.authorization.First().actor, act.block_time, logger);
+                                break;
                             case "sellmatch":
                                 await HandleSellMatchAsync(db, act.action_trace.act.data, act.block_time, logger);
                                 break;
@@ -64,6 +70,45 @@ namespace Andoromeda.Kyubey.Timers.Jobs
                 {
                     break;
                 }
+            }
+        }
+
+        private async Task HandleAddFavAsync(KyubeyContext db, string symbol, string account, DateTime time, ILogger logger)
+        {
+            try
+            {
+                if (await db.Favorites.SingleOrDefaultAsync(x => x.Account == account && x.TokenId == symbol) == null)
+                {
+                    db.Favorites.Add(new Favorite
+                    {
+                        Account = account,
+                        TokenId = symbol
+                    });
+                    await db.SaveChangesAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex.ToString());
+                throw;
+            }
+        }
+
+        private async Task HandleRemoveFavAsync(KyubeyContext db, string symbol, string account, DateTime time, ILogger logger)
+        {
+            try
+            {
+                var fav = await db.Favorites.SingleOrDefaultAsync(x => x.Account == account && x.TokenId == symbol);
+                if (fav != null)
+                {
+                    db.Favorites.Remove(fav);
+                    await db.SaveChangesAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex.ToString());
+                throw;
             }
         }
 
