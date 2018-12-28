@@ -21,7 +21,6 @@ namespace Andoromeda.Kyubey.Timers.Jobs
         public void PullNewDexPrice(KyubeyContext db)
         {
             var tokens = db.Tokens
-                .Where(x => !string.IsNullOrEmpty(x.NewDexId))
                 .ToList();
 
             var results = GetWhaleExPriceAsync().Result;
