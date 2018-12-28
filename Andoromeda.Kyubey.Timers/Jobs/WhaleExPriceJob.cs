@@ -34,6 +34,7 @@ namespace Andoromeda.Kyubey.Timers.Jobs
                 }
 
                 x.WhaleExPrice = results.First(y => y.baseCurrency == x.Id).lastPrice;
+                db.SaveChanges();
             }
         }
 
