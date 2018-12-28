@@ -8,7 +8,7 @@ using Andoromeda.Kyubey.Models;
 
 namespace Andoromeda.Kyubey.Timers.Jobs
 {
-    public class NewDexPriceJob
+    public class NewDexPriceJob : Job
     {
         private class NewDexPrice
         { 

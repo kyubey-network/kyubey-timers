@@ -8,7 +8,7 @@ using Pomelo.AspNetCore.TimedJob;
 
 namespace Andoromeda.Kyubey.Timers.Jobs
 {
-    public class WhaleExPriceJob
+    public class WhaleExPriceJob : Job
     {
         private class WhaleExPriceItem
         { 
