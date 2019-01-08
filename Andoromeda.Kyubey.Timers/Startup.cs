@@ -11,7 +11,7 @@ namespace Andoromeda.Kyubey.Timers
     {
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddConfiguration(out var Config);
+            services.AddConfiguration2(out var Config);
             services.AddEosNodeApiInvoker();
             services.AddMySqlLogger("kyubey-timers");
             services.AddTimedJob();
