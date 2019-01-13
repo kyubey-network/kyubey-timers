@@ -11,14 +11,14 @@ namespace Andoromeda.Kyubey.Timers
     {
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddConfiguration2(out var Config);
+            services.AddConfiguration2(out var config);
             services.AddEosNodeApiInvoker();
-            services.AddMySqlLogger("kyubey-timers");
+            services.AddMySqlLogger("kyubey-timers", config["MySQL"]);
             services.AddTimedJob();
             services.AddEntityFrameworkMySql()
                 .AddDbContext<KyubeyContext>(x =>
                 {
-                    x.UseMySql(Config["MySQL"]);
+                    x.UseMySql(config["MySQL"]);
                 });
         }
         
