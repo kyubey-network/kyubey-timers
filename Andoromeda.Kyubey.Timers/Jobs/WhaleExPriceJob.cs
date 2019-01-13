@@ -17,7 +17,7 @@ namespace Andoromeda.Kyubey.Timers.Jobs
             public double lastPrice { get; set; }
         }
 
-        [Invoke(Begin = "2018-06-01", Interval = 1000 * 60, SkipWhileExecuting = true)]
+        [Invoke(Begin = "2018-06-01 0:01", Interval = 2000 * 60, SkipWhileExecuting = true)]
         public void PullNewDexPrice(KyubeyContext db)
         {
             var tokens = db.Tokens
@@ -32,9 +32,9 @@ namespace Andoromeda.Kyubey.Timers.Jobs
                     continue;
                 }
 
-                x.WhaleExPrice = results.First(y => y.baseCurrency == x.Id).lastPrice;
-                db.SaveChanges();
+                x.WhaleExPrice = results.First(y => y.baseCurrency == x.Id).lastPrice;                
             }
+            db.SaveChanges();
         }
 
         private async Task<IEnumerable<WhaleExPriceItem>> GetWhaleExPriceAsync()
