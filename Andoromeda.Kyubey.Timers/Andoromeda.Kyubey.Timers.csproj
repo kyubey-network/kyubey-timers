@@ -9,9 +9,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Andoromeda.Framework.EosNode" Version="1.0.0-*" />
-    <PackageReference Include="Andoromeda.Framework.Logger" Version="1.0.0-*" />
-    <PackageReference Include="Andoromeda.Kyubey.Models" Version="1.0.0-*" />
+    <PackageReference Include="Andoromeda.Framework.EosNode" Version="*" />
+    <PackageReference Include="Andoromeda.Framework.Logger" Version="*" />
+    <PackageReference Include="Andoromeda.Kyubey.Models" Version="*" />
     <PackageReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.AspNetCore.Razor.Design" Version="2.1.2" PrivateAssets="All" />
     <PackageReference Include="Pomelo.AspNetCore.TimedJob" Version="2.0.0-rtm-10046" />

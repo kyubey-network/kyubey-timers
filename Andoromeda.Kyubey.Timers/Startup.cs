@@ -12,23 +12,23 @@ namespace Andoromeda.Kyubey.Timers
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddConfiguration2(out var config);
-            services.AddEosNodeApiInvoker();
-            services.AddMySqlLogger("kyubey-timers", config["MySQL"]);
+            services.AddEosNodeApiInvoker(config["NodeAddress"]);
+            services.AddMySqlLogger("kyubey-timers", config["DexBosMySql"]);
             services.AddTimedJob();
             services.AddEntityFrameworkMySql()
                 .AddDbContext<KyubeyContext>(x =>
                 {
-                    x.UseMySql(config["MySQL"]);
+                    x.UseMySql(config["DexBosMySql"]);
                 });
         }
-        
+
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
             app.Run(async (context) =>
             {
                 await context.Response.WriteAsync("Kyubey Timers are running...");
             });
-            
+
             using (var serviceScope = app.ApplicationServices.CreateScope())
             {
                 serviceScope.ServiceProvider.GetRequiredService<KyubeyContext>().Database.EnsureCreated();

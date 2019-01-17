@@ -319,7 +319,7 @@ namespace Andoromeda.Kyubey.Timers.Jobs
                 var position = Convert.ToInt32(row.Value);
                 logger.LogInfo("Current kyubeydex.bp account seq is " + position);
 
-                var ret = await nodeApiInvoker.GetActionsAsync("kyubeydex.bp", position);
+                var ret = await nodeApiInvoker.GetActionsAsync(config["DexAccount"], position);
                 if (ret.actions.Count() == 0)
                 {
                     logger.LogInfo("No new action in kyubeydex.bp");

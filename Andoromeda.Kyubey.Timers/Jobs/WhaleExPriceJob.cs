@@ -17,7 +17,7 @@ namespace Andoromeda.Kyubey.Timers.Jobs
             public double lastPrice { get; set; }
         }
 
-        [Invoke(Begin = "2018-06-01 0:01", Interval = 2000 * 60, SkipWhileExecuting = true)]
+        //[Invoke(Begin = "2018-06-01 0:01", Interval = 2000 * 60, SkipWhileExecuting = true)]
         public void PullNewDexPrice(KyubeyContext db)
         {
             var tokens = db.Tokens
