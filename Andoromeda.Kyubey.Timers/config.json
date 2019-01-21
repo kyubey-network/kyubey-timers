@@ -1,4 +1,4 @@
 {
-  "NodeAddress": "https://bostest.api.blockgo.vip",
-  "DexAccount": "kyubeydex2bp"
+  "NodeAddress": "http://api.bossweden.org",
+  "DexAccount": "kyubeydexbos"
 }
