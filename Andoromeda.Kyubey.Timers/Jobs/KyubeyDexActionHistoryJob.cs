@@ -10,6 +10,7 @@ using Andoromeda.Framework.EosNode;
 using Andoromeda.Framework.Logger;
 using Andoromeda.Kyubey.Models;
 using Andoromeda.Kyubey.Timers.Models;
+using Newtonsoft.Json;
 
 namespace Andoromeda.Kyubey.Timers.Jobs
 {
@@ -18,7 +19,15 @@ namespace Andoromeda.Kyubey.Timers.Jobs
         [Invoke(Begin = "2018-06-01", Interval = 1000 * 5, SkipWhileExecuting = true)]
         public void PollDexActions(IConfiguration config, KyubeyContext db, ILogger logger, NodeApiInvoker nodeApiInvoker)
         {
-            TryHandleDexActionAsync(config, db, logger, nodeApiInvoker).Wait();
+            try
+            {
+                logger.LogInfo("Start Sync Dex Chain Data");
+                TryHandleDexActionAsync(config, db, logger, nodeApiInvoker).Wait();
+            }
+            catch (Exception e)
+            {
+                logger.LogError("Sync Exception:" + JsonConvert.SerializeObject(e));
+            }
         }
 
         private async Task TryHandleDexActionAsync(IConfiguration config, KyubeyContext db, ILogger logger, NodeApiInvoker nodeApiInvoker)
