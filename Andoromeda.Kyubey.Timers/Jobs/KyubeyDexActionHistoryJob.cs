@@ -21,7 +21,6 @@ namespace Andoromeda.Kyubey.Timers.Jobs
         {
             try
             {
-                logger.LogInfo("Start Sync Dex Chain Data");
                 TryHandleDexActionAsync(config, db, logger, nodeApiInvoker).Wait();
             }
             catch (Exception e)
