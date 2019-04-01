@@ -16,8 +16,9 @@ namespace Andoromeda.Kyubey.Timers.Jobs
 {
     public class KyubeyDexActionHistoryJob : Job
     {
-        [Invoke(Begin = "2018-06-01", Interval = 1000 * 5, SkipWhileExecuting = true)]
-        public void PollDexActions(IConfiguration config, KyubeyContext db, ILogger logger, NodeApiInvoker nodeApiInvoker)
+        [Invoke(Begin = "2018-06-01", Interval = 500, SkipWhileExecuting = true)]
+        public void PollDexActions(IConfiguration config, KyubeyContext db, ILogger logger,
+            NodeApiInvoker nodeApiInvoker)
         {
             try
             {
@@ -29,7 +30,8 @@ namespace Andoromeda.Kyubey.Timers.Jobs
             }
         }
 
-        private async Task TryHandleDexActionAsync(IConfiguration config, KyubeyContext db, ILogger logger, NodeApiInvoker nodeApiInvoker)
+        private async Task TryHandleDexActionAsync(IConfiguration config, KyubeyContext db, ILogger logger,
+            NodeApiInvoker nodeApiInvoker)
         {
             while (true)
             {
@@ -38,15 +40,18 @@ namespace Andoromeda.Kyubey.Timers.Jobs
                 {
                     foreach (var act in actions)
                     {
-                        logger.LogInfo($"Handling action log pos={act.account_action_seq}, act={act.action_trace.act.name}");
+                        logger.LogInfo(
+                            $"Handling action log pos={act.account_action_seq}, act={act.action_trace.act.name}");
 
                         switch (act.action_trace.act.name)
                         {
                             case "addfav":
-                                await HandleAddFavAsync(db, (string)act.action_trace.act.data.symbol, act.action_trace.act.authorization.First().actor, act.block_time, logger);
+                                await HandleAddFavAsync(db, (string) act.action_trace.act.data.symbol,
+                                    act.action_trace.act.authorization.First().actor, act.block_time, logger);
                                 break;
                             case "removefav":
-                                await HandleRemoveFavAsync(db, (string)act.action_trace.act.data.symbol, act.action_trace.act.authorization.First().actor, act.block_time, logger);
+                                await HandleRemoveFavAsync(db, (string) act.action_trace.act.data.symbol,
+                                    act.action_trace.act.authorization.First().actor, act.block_time, logger);
                                 break;
                             case "sellmatch":
                                 await HandleSellMatchAsync(db, act.action_trace.act.data, act.block_time, logger);
@@ -74,6 +79,7 @@ namespace Andoromeda.Kyubey.Timers.Jobs
                         }
                     }
                 }
+
                 if (actions == null || actions.Count() < 100)
                 {
                     break;
@@ -81,7 +87,8 @@ namespace Andoromeda.Kyubey.Timers.Jobs
             }
         }
 
-        private async Task HandleAddFavAsync(KyubeyContext db, string symbol, string account, DateTime time, ILogger logger)
+        private async Task HandleAddFavAsync(KyubeyContext db, string symbol, string account, DateTime time,
+            ILogger logger)
         {
             try
             {
@@ -102,7 +109,8 @@ namespace Andoromeda.Kyubey.Timers.Jobs
             }
         }
 
-        private async Task HandleRemoveFavAsync(KyubeyContext db, string symbol, string account, DateTime time, ILogger logger)
+        private async Task HandleRemoveFavAsync(KyubeyContext db, string symbol, string account, DateTime time,
+            ILogger logger)
         {
             try
             {
@@ -124,7 +132,7 @@ namespace Andoromeda.Kyubey.Timers.Jobs
         {
             try
             {
-                string symbol = Convert.ToString(data.symbol);
+                string symbol = JsonConvert.DeserializeObject<ContractClean>(data.ToString()).Symbol;
                 db.Remove(db.DexBuyOrders.Where(x => x.TokenId == symbol));
                 await db.SaveChangesAsync();
                 db.Remove(db.DexSellOrders.Where(x => x.TokenId == symbol));
@@ -189,6 +197,7 @@ namespace Andoromeda.Kyubey.Timers.Jobs
                     db.DexSellOrders.Remove(order);
                     await db.SaveChangesAsync();
                 }
+
                 order = new DexSellOrder
                 {
                     Id = data.t.id,
@@ -221,6 +230,7 @@ namespace Andoromeda.Kyubey.Timers.Jobs
                     db.DexBuyOrders.Remove(order);
                     await db.SaveChangesAsync();
                 }
+
                 order = new DexBuyOrder
                 {
                     Id = data.o.id,
@@ -258,8 +268,10 @@ namespace Andoromeda.Kyubey.Timers.Jobs
                     {
                         db.DexBuyOrders.Remove(order);
                     }
+
                     await db.SaveChangesAsync();
                 }
+
                 db.MatchReceipts.Add(new MatchReceipt
                 {
                     Ask = ask,
@@ -297,8 +309,10 @@ namespace Andoromeda.Kyubey.Timers.Jobs
                     {
                         db.DexSellOrders.Remove(order);
                     }
+
                     await db.SaveChangesAsync();
                 }
+
                 db.MatchReceipts.Add(new MatchReceipt
                 {
                     Ask = ask,
@@ -319,7 +333,8 @@ namespace Andoromeda.Kyubey.Timers.Jobs
             }
         }
 
-        private async Task<IEnumerable<GetActionsResponseAction>> LookupDexActionAsync(IConfiguration config, KyubeyContext db, ILogger logger, NodeApiInvoker nodeApiInvoker)
+        private async Task<IEnumerable<GetActionsResponseAction>> LookupDexActionAsync(IConfiguration config,
+            KyubeyContext db, ILogger logger, NodeApiInvoker nodeApiInvoker)
         {
             try
             {
@@ -337,7 +352,8 @@ namespace Andoromeda.Kyubey.Timers.Jobs
                 position += ret.actions.Count();
                 row.Value = position.ToString();
                 await db.SaveChangesAsync();
-                logger.LogInfo($"{ret.actions.Count()} new actions found in kyubeydex.bp, position moved to " + position);
+                logger.LogInfo(
+                    $"{ret.actions.Count()} new actions found in kyubeydex.bp, position moved to " + position);
 
                 return ret.actions;
             }
@@ -348,7 +364,7 @@ namespace Andoromeda.Kyubey.Timers.Jobs
             }
         }
 
-        private static HttpClient _client = new HttpClient { BaseAddress = new Uri("https://kyubey.net") };
+        private static HttpClient _client = new HttpClient {BaseAddress = new Uri("https://kyubey.net")};
 
         private async Task<GetTokenResultContract> GetTokenContractsAsync(string symbol)
         {
